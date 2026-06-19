@@ -62,47 +62,33 @@ graph TD
 ### Prerequisites
 *   Python 3.8 to Python 3.14 installed on your system.
 
-### Step 1: Clone or Set Up Virtual Environment
-Create and activate a virtual environment to isolate the project dependencies:
+### Step 1: Automatic Environment Setup
+Run the automated environment setup script. It will automatically create the virtual environment, upgrade pip, install standard package requirements, and clone/patch/install the correct `twifork` client from git:
 
 *   **macOS / Linux:**
     ```bash
-    python3 -m venv venv
+    python3 setup_env.py
+    ```
+*   **Windows:**
+    ```cmd
+    python setup_env.py
+    ```
+
+### Step 2: Activate the Virtual Environment
+Activate the environment to start running commands:
+
+*   **macOS / Linux:**
+    ```bash
     source venv/bin/activate
     ```
 *   **Windows (Command Prompt):**
     ```cmd
-    python -m venv venv
     venv\Scripts\activate
     ```
 *   **Windows (PowerShell):**
     ```powershell
-    python -m venv venv
     .\venv\Scripts\Activate.ps1
     ```
-
-### Step 2: Install Dependencies
-Install all required packages from `requirements.txt`:
-```bash
-pip install -r requirements.txt
-```
-
-#### Twikit / Twifork Packaging Patch (IMPORTANT)
-The original `twikit` library is deprecated and fails due to Twitter JavaScript updates. We use `twifork`, an actively maintained fork. However, due to a setuptools packaging issue in `twifork` where subfolders without `__init__.py` are ignored, run the following patch commands to clone and install it correctly:
-
-```bash
-# 1. Clone the twifork source repository
-git clone https://github.com/PawiX25/twifork.git temp_twifork
-
-# 2. Add the missing __init__.py file to the client directory
-touch temp_twifork/twikit/client/__init__.py
-
-# 3. Install the patched package from the local directory
-pip install ./temp_twifork
-
-# 4. Clean up the cloned repository folder
-rm -rf temp_twifork
-```
 
 ---
 

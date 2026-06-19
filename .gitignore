@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Local databases and results
+data/database.sqlite
+results/
+
+# User configurations & sessions
+config/cookies.json
+config/credentials.json
