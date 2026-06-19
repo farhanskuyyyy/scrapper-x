@@ -1,0 +1,10 @@
+{
+  "db_path": "data/database.sqlite",
+  "keywords": ["Makan Bergizi Gratis", "MBG", "Program MBG"],
+  "test_split": 0.2,
+  "max_features": 5000,
+  "lexicon_urls": {
+    "positive": "https://raw.githubusercontent.com/fajri91/InSet/master/positive.tsv",
+    "negative": "https://raw.githubusercontent.com/fajri91/InSet/master/negative.tsv"
+  }
+}

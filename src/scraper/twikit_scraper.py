@@ -1,0 +1,126 @@
+import os
+import json
+import asyncio
+from twikit import Client
+from src.scraper.base_scraper import BaseScraper
+
+class TwikitScraper(BaseScraper):
+    def __init__(self, cookies_path="config/cookies.json", credentials_path="config/credentials.json"):
+        self.cookies_path = cookies_path
+        self.credentials_path = credentials_path
+        self.client = Client('id-ID') # Set language to Indonesian locale
+        
+        self.authenticated = False
+
+    async def authenticate_async(self):
+        # 1. Try loading cookies first
+        if os.path.exists(self.cookies_path):
+            try:
+                print("Loading X/Twitter session from cookies...")
+                with open(self.cookies_path, 'r', encoding='utf-8') as f:
+                    cookies_data = json.load(f)
+                
+                # Check if it is the browser extension list format
+                if isinstance(cookies_data, list):
+                    print("Detected browser-exported cookies list. Converting format...")
+                    formatted_cookies = {}
+                    for cookie in cookies_data:
+                        if isinstance(cookie, dict) and "name" in cookie and "value" in cookie:
+                            formatted_cookies[cookie["name"]] = cookie["value"]
+                    cookies_data = formatted_cookies
+                
+                self.client.set_cookies(cookies_data)
+                self.authenticated = True
+                print("Authentication successful via cookies.")
+                return True
+            except Exception as e:
+                print(f"Failed to load cookies: {e}. Attempting standard login...")
+        
+        # 2. Try credentials
+        if os.path.exists(self.credentials_path):
+            try:
+                with open(self.credentials_path, "r") as f:
+                    creds = json.load(f)
+                
+                username = creds.get("username")
+                email = creds.get("email")
+                password = creds.get("password")
+                
+                if not username or not password:
+                    print("Missing username or password in config/credentials.json")
+                    return False
+                
+                print(f"Logging into X as {username}...")
+                await self.client.login(
+                    auth_info_1=username,
+                    auth_info_2=email,
+                    password=password
+                )
+                
+                # Save cookies for next time
+                os.makedirs(os.path.dirname(self.cookies_path), exist_ok=True)
+                self.client.save_cookies(self.cookies_path)
+                self.authenticated = True
+                print("Authentication successful. Cookies saved.")
+                return True
+            except Exception as e:
+                print(f"Failed to login: {e}")
+        else:
+            print(f"No credentials file found at {self.credentials_path}. Please create it to run live scraping.")
+            
+        return False
+
+    def authenticate(self):
+        return asyncio.run(self.authenticate_async())
+
+    async def search_tweets_async(self, query, limit=100):
+        # Recreate Client to bind connection session to the active event loop
+        self.client = Client('id-ID')
+        self.authenticated = False
+        
+        if not self.authenticated:
+            print("Client is not authenticated. Attempting login...")
+            if not await self.authenticate_async():
+                print("Skipping live search due to missing/invalid X credentials. Please use mock scraper instead.")
+                return []
+                
+        tweets = []
+        try:
+            print(f"Searching X for query: '{query}' (limit: {limit})...")
+            # Perform search. twikit search is asynchronous
+            results = await self.client.search_tweet(query, 'Latest')
+            
+            count = 0
+            while results and count < limit:
+                for tweet in results:
+                    created_at_str = tweet.created_at
+                    
+                    reply_to = str(tweet.in_reply_to) if getattr(tweet, 'in_reply_to', None) else None
+                    tweets.append({
+                        'tweet_id': str(tweet.id),
+                        'username': tweet.user.screen_name,
+                        'created_at': created_at_str,
+                        'raw_text': tweet.text,
+                        'keyword': query,
+                        'reply_to_id': reply_to
+                    })
+                    count += 1
+                    if count >= limit:
+                        break
+                        
+                # Fetch next page if needed
+                if count < limit:
+                    print(f"Fetched {count} tweets. Loading next page...")
+                    await asyncio.sleep(2) # rate limiting protection
+                    results = await results.next()
+                else:
+                    break
+                    
+            print(f"Successfully scraped {len(tweets)} tweets for query: '{query}'")
+        except Exception as e:
+            print(f"Error during tweet search: {e}")
+            
+        return tweets
+
+    def search_tweets(self, query, limit=100):
+        return asyncio.run(self.search_tweets_async(query, limit))
