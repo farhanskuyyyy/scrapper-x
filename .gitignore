@@ -16,3 +16,8 @@ results/
 # User configurations & sessions
 config/cookies.json
 config/credentials.json
+
+results/
+
+config/cookies.json
+config/credentials.json
