@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 from twikit import Client
+from twikit.x_client_transaction import ClientTransaction
 from src.scraper.base_scraper import BaseScraper
 
 class TwikitScraper(BaseScraper):
@@ -87,9 +88,24 @@ class TwikitScraper(BaseScraper):
         tweets = []
         try:
             print(f"Searching X for query: '{query}' (limit: {limit})...")
-            # Perform search. twikit search is asynchronous
-            results = await self.client.search_tweet(query, 'Latest')
-            
+            # Perform search. twikit search is asynchronous.
+            # X intermittently serves a stripped bot-check page instead of the app shell,
+            # which makes twikit's transaction-ID bootstrap fail with
+            # "Couldn't get KEY_BYTE indices". A failed bootstrap poisons the client
+            # (the bad page is cached), so reset it and retry a few times.
+            max_attempts = 5
+            results = None
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    results = await self.client.search_tweet(query, 'Latest')
+                    break
+                except Exception as e:
+                    if "KEY_BYTE" not in str(e) or attempt == max_attempts:
+                        raise
+                    print(f"X served a bot-check page (attempt {attempt}/{max_attempts}). Retrying...")
+                    self.client.client_transaction = ClientTransaction()
+                    await asyncio.sleep(3)
+
             count = 0
             while results and count < limit:
                 for tweet in results:
