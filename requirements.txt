@@ -5,3 +5,4 @@ numpy>=1.20.0
 requests>=2.25.0
 matplotlib>=3.4.0
 tabulate>=0.8.9
+twikit>=2.3.3
