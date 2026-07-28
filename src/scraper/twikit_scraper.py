@@ -104,6 +104,11 @@ class TwikitScraper(BaseScraper):
                         raise
                     print(f"X served a bot-check page (attempt {attempt}/{max_attempts}). Retrying...")
                     self.client.client_transaction = ClientTransaction()
+                    # The bot-check response sets its own __cf_bm cookie next to the one
+                    # from cookies.json (same name, different domain). Duplicate names make
+                    # httpx raise CookieConflict on the next request, so dedupe the jar.
+                    deduped = {c.name: c.value for c in self.client.http.cookies.jar}
+                    self.client.set_cookies(deduped, clear_cookies=True)
                     await asyncio.sleep(3)
 
             count = 0
