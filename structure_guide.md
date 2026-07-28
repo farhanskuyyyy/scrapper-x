@@ -2,6 +2,8 @@
 
 Dokumen ini menjelaskan struktur direktori (folder) dan fungsi dari masing-masing berkas di dalam project **ta-scrapper-x** untuk mempermudah pemahaman kode program dan penulisan skripsi/laporan Tugas Akhir Anda.
 
+> **Penjelasan proses & tanggung jawab per file** tersedia di [`penjelasan_file.md`](penjelasan_file.md).
+
 ---
 
 ## 1. Pohon Struktur Folder
