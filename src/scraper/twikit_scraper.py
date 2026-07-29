@@ -1,9 +1,67 @@
 import os
 import json
+import re
 import asyncio
+import twikit.x_client_transaction.transaction as trans
+import twikit.user as tw_user
 from twikit import Client
 from twikit.x_client_transaction import ClientTransaction
 from src.scraper.base_scraper import BaseScraper
+
+# Patch 1: Support updated X bundle regex for ondemand.s
+NEW_ON_DEMAND_INDEX_REGEX = re.compile(r""",(\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
+
+_original_get_indices = trans.ClientTransaction.get_indices
+
+async def _patched_get_indices(self, home_page_response, session, headers):
+    key_byte_indices = []
+    response = self.validate_response(home_page_response) or self.home_page_response
+    page_str = str(response)
+    
+    on_demand_file = trans.ON_DEMAND_FILE_REGEX.search(page_str)
+    if on_demand_file:
+        on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"
+    else:
+        m = NEW_ON_DEMAND_INDEX_REGEX.search(page_str)
+        if m:
+            idx = m.group(1)
+            h = re.search(r',%s:"([0-9a-f]+)"' % idx, page_str)
+            if h:
+                on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{h.group(1)}a.js"
+            else:
+                on_demand_file_url = None
+        else:
+            on_demand_file_url = None
+
+    if on_demand_file_url:
+        on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
+        key_byte_indices_match = trans.INDICES_REGEX.finditer(str(on_demand_file_response.text))
+        for item in key_byte_indices_match:
+            key_byte_indices.append(item.group(2))
+
+    if not key_byte_indices:
+        raise Exception("Couldn't get KEY_BYTE indices")
+    key_byte_indices = list(map(int, key_byte_indices))
+    return key_byte_indices[0], key_byte_indices[1:]
+
+trans.ClientTransaction.get_indices = _patched_get_indices
+
+# Patch 2: Prevent KeyError in twikit User class when user fields (urls, withheld) are missing
+_original_user_init = tw_user.User.__init__
+
+def _patched_user_init(self, client, data):
+    if isinstance(data, dict):
+        legacy = data.get('legacy', {})
+        if isinstance(legacy, dict):
+            entities = legacy.setdefault('entities', {})
+            if isinstance(entities, dict):
+                desc = entities.setdefault('description', {})
+                if isinstance(desc, dict):
+                    desc.setdefault('urls', [])
+            legacy.setdefault('withheld_in_countries', [])
+    _original_user_init(self, client, data)
+
+tw_user.User.__init__ = _patched_user_init
 
 class TwikitScraper(BaseScraper):
     def __init__(self, cookies_path="config/cookies.json", credentials_path="config/credentials.json"):
