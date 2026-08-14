@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preprocessing &amp; Labeling - Analisis Sentimen MBG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z"/><path d="m16 10-4 4-2-2"/></svg>
+      </div>
+      <span>Sentimen MBG</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="scraping.html">Scraping</a>
+      <a href="preprocessing.html" class="active">Preprocessing &amp; Labeling</a>
+      <a href="hasil.html">Hasil Model</a>
+      <a href="#" onclick="logout()" class="btn btn-logout">Logout</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div class="header-icon-badge">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div>
+        <h1 class="page-title">Preprocessing &amp; Pelabelan Otomatis</h1>
+        <p class="page-sub">
+          Langkah 2: Bersihkan teks tweet (case folding, cleansing, stopword removal, stemming Sastrawi), lalu beri label sentimen otomatis dengan InSet Lexicon.
+        </p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          1. Preprocessing Teks
+        </h2>
+        <p style="font-size:0.88rem;color:var(--ink-secondary);margin-bottom:14px">
+          Antrian belum diproses: <strong id="pendingPre" style="color:var(--ink)">-</strong> tweet
+        </p>
+        <button class="btn btn-primary" id="preBtn" style="width:100%">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Jalankan Preprocessing (Sastrawi)
+        </button>
+      </div>
+
+      <div class="panel">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          2. Pelabelan InSet Lexicon
+        </h2>
+        <p style="font-size:0.88rem;color:var(--ink-secondary);margin-bottom:14px">
+          Antrian belum dilabel: <strong id="pendingLabel" style="color:var(--ink)">-</strong> tweet
+        </p>
+        <button class="btn btn-dark" id="labelBtn" style="width:100%">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Jalankan Pelabelan Otomatis
+        </button>
+      </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div class="terminal-window" id="procLogWindow" style="display:none">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <div class="terminal-title">Preprocessing &amp; Labeling Console Output</div>
+      </div>
+      <div class="terminal-body" id="procLog"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Tabel Data Preprocessing &amp; Labeling
+        </h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="labelFilter" style="font-size:0.82rem;color:var(--ink-secondary);font-weight:600">Filter Label:</label>
+          <select id="labelFilter" class="form-control">
+            <option value="all">Semua Sentimen</option>
+            <option value="positive">Positif</option>
+            <option value="negative">Negatif</option>
+            <option value="neutral">Netral</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Tweet Asli</th>
+              <th>Hasil Preprocessing</th>
+              <th class="num">Skor</th>
+              <th>Sentimen</th>
+              <th>URL Twitter</th>
+            </tr>
+          </thead>
+          <tbody id="tweetRows"></tbody>
+        </table>
+      </div>
+      <div id="tableNarration"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          Ringkasan Distribusi Sentimen
+        </h2>
+      </div>
+      <div class="chart-row">
+        <div id="donut"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div id="donutNarration"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          Word Cloud per Kategori Sentimen
+        </h2>
+      </div>
+      <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-bottom:0">
+        <div class="card pos" style="padding:16px">
+          <div class="label" style="font-weight:700;margin-bottom:8px;color:var(--pos-text)">Kata Kunci Sentimen Positif</div>
+          <div id="wcPos"></div>
+        </div>
+        <div class="card neg" style="padding:16px">
+          <div class="label" style="font-weight:700;margin-bottom:8px;color:var(--neg-text)">Kata Kunci Sentimen Negatif</div>
+          <div id="wcNeg"></div>
+        </div>
+        <div class="card neu" style="padding:16px">
+          <div class="label" style="font-weight:700;margin-bottom:8px;color:var(--neu-text)">Kata Kunci Sentimen Netral</div>
+          <div id="wcNeu"></div>
+        </div>
+      </div>
+      <div id="wcNarration"></div>
+    </div>
+
+    <div class="actions">
+      <a href="scraping.html" class="btn btn-secondary">&larr; Kembali ke Scraping</a>
+      <a href="hasil.html" class="btn btn-primary">Lanjut: Latih NB &amp; SVM &rarr;</a>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+    let allTweets = [];
+
+    function renderRows(filter) {
+      const rows = allTweets
+        .filter((t) => filter === "all" || t.label === filter)
+        .map((t) => {
+          const labelId = { positive: "Positif", negative: "Negatif", neutral: "Netral" }[t.label] || t.label;
+          const tweetUrl = t.tweet_url || (t.tweet_id ? `https://x.com/${t.username}/status/${t.tweet_id}` : `https://x.com/${t.username}`);
+          return `<tr>
+            <td>
+              <a href="https://x.com/${esc(t.username)}" target="_blank" rel="noopener noreferrer" class="user-link">
+                @${esc(t.username)}
+              </a>
+            </td>
+            <td class="text-cell">${esc(t.raw_text)}</td>
+            <td class="text-cell" style="color:var(--ink-secondary)">${esc(t.cleaned_text)}</td>
+            <td class="num font-mono" style="font-weight:700">${t.sentiment_score}</td>
+            <td><span class="badge ${esc(t.label)}">${labelId}</span></td>
+            <td>
+              <a href="${esc(tweetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-tweet-link" title="Buka tweet di X">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <span>Buka Tweet</span>
+              </a>
+            </td>
+          </tr>`;
+        }).join("");
+      document.getElementById("tweetRows").innerHTML =
+        rows || `<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);padding:32px">Tidak ada data untuk filter ini.</td></tr>`;
+    }
+
+    function renderPage(data) {
+      allTweets = data.tweets;
+      renderRows(document.getElementById("labelFilter").value || "all");
+      document.getElementById("pendingPre").textContent = data.pipeline.pending_preprocess;
+      document.getElementById("pendingLabel").textContent = data.pipeline.pending_label;
+
+      const s = data.stats;
+      const items = [
+        { label: "Positif", value: s.positive, pct: s.positive_pct, color: COLORS.pos },
+        { label: "Negatif", value: s.negative, pct: s.negative_pct, color: COLORS.neg },
+        { label: "Netral", value: s.neutral, pct: s.neutral_pct, color: COLORS.neu },
+      ];
+      donutChart(document.getElementById("donut"), items);
+      renderLegend(document.getElementById("legend"), items);
+
+      document.getElementById("tableNarration").innerHTML = narration(
+        `Tabel di atas menampilkan perbandingan antara teks tweet asli dengan teks hasil ` +
+        `preprocessing yang telah melalui tahapan case folding, cleansing (penghapusan URL, mention, ` +
+        `hashtag, dan karakter non-huruf), stopword removal, serta stemming menggunakan library Sastrawi. ` +
+        `Kolom skor merupakan hasil penjumlahan bobot kata berdasarkan kamus InSet Lexicon yang kemudian ` +
+        `menentukan label sentimen: skor &gt; 0 diberi label positif, skor &lt; 0 negatif, dan skor = 0 netral.`);
+
+      const dominant = items.reduce((a, b) => (b.value > a.value ? b : a));
+      document.getElementById("donutNarration").innerHTML = narration(
+        `Gambar di atas menunjukkan distribusi sentimen dari ${s.total_labeled} tweet berlabel. ` +
+        `Sentimen negatif berjumlah ${s.negative} tweet (${s.negative_pct}%), sentimen positif ` +
+        `${s.positive} tweet (${s.positive_pct}%), dan sentimen netral ${s.neutral} tweet (${s.neutral_pct}%). ` +
+        `Berdasarkan hasil pelabelan tersebut, opini masyarakat terhadap Program MBG cenderung ` +
+        `${dominant.label.toLowerCase()} dengan persentase ${dominant.pct}%.`);
+
+      const wc = data.wordclouds || {};
+      wordCloud(document.getElementById("wcPos"), wc.positive, COLORS.pos);
+      wordCloud(document.getElementById("wcNeg"), wc.negative, COLORS.neg);
+      wordCloud(document.getElementById("wcNeu"), wc.neutral, COLORS.neu);
+
+      const topWord = (arr) => (arr && arr.length ? `"${arr[0].term}" (${arr[0].count} kali)` : "-");
+      document.getElementById("wcNarration").innerHTML = narration(
+        `Gambar word cloud di atas memvisualisasikan kata-kata yang paling sering muncul pada tiap ` +
+        `kategori sentimen setelah preprocessing — semakin besar ukuran huruf, semakin tinggi frekuensi ` +
+        `kemunculan kata tersebut. Pada kategori positif kata yang paling dominan adalah ${topWord(wc.positive)}, ` +
+        `pada kategori negatif ${topWord(wc.negative)}, dan pada kategori netral ${topWord(wc.neutral)}. ` +
+        `Visualisasi ini membantu memahami konteks pembicaraan publik pada masing-masing kecenderungan sentimen.`);
+    }
+
+    loadData().then((data) => {
+      renderPage(data);
+      document.getElementById("labelFilter").addEventListener("change", (e) => renderRows(e.target.value));
+      document.getElementById("preBtn").addEventListener("click", async (e) => {
+        document.getElementById("procLogWindow").style.display = "block";
+        const ok = await runPhase("preprocess", {}, e.target, document.getElementById("procLog"));
+        if (ok) loadData().then(renderPage);
+      });
+      document.getElementById("labelBtn").addEventListener("click", async (e) => {
+        document.getElementById("procLogWindow").style.display = "block";
+        const ok = await runPhase("label", {}, e.target, document.getElementById("procLog"));
+        if (ok) loadData().then(renderPage);
+      });
+    }).catch(showLoadError);
+  </script>
+</body>
+</html>

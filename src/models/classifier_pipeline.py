@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -116,7 +117,49 @@ class ClassifierPipeline:
         # Generate and save textual summary report
         self.save_textual_summary(results_df, df, len(X_train), len(X_test), output_dir, sentiment_dist, df_all, cm_data)
 
+        # Export machine-readable results for the PHP webapp
+        self.save_ml_results_json(results_df, cm_data, sentiment_dist, len(X_train), len(X_test), X_train_vec, output_dir)
+
         return results
+
+    def save_ml_results_json(self, results_df, cm_data, sentiment_dist, train_size, test_size, X_train_vec, output_dir):
+        mean_tfidf = np.asarray(X_train_vec.mean(axis=0)).ravel()
+        top_idx = mean_tfidf.argsort()[::-1][:10]
+        feature_names = self.vectorizer.get_feature_names_out()
+        top_terms = [{"term": str(feature_names[i]), "weight": round(float(mean_tfidf[i]), 4)} for i in top_idx]
+
+        models = {}
+        for name, key in [("Naive Bayes", "nb"), ("SVM", "svm")]:
+            tn, fp, fn, tp = cm_data[name].ravel()
+            row = results_df.loc[name]
+            models[key] = {
+                "metrics": {
+                    "accuracy": round(float(row["Accuracy"]), 4),
+                    "precision": round(float(row["Precision"]), 4),
+                    "recall": round(float(row["Recall"]), 4),
+                    "f1": round(float(row["F1-Score"]), 4),
+                    "auc": round(float(row["AUC-ROC"]), 4),
+                },
+                "confusion": {"tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)},
+                "full_pred_positive": sentiment_dist[name]["positive"],
+                "full_pred_negative": sentiment_dist[name]["negative"],
+            }
+
+        tn, fp, fn, tp = cm_data["Naive Bayes"].ravel()
+        payload = {
+            "generated_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "dataset_size": train_size + test_size,
+            "train_size": train_size,
+            "test_size": test_size,
+            "test_positive": int(tp + fn),
+            "test_negative": int(tn + fp),
+            "models": models,
+            "top_terms": top_terms,
+        }
+        dest = os.path.join(output_dir, "ml_results.json")
+        with open(dest, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        print(f"ML results JSON saved to '{dest}'")
 
     def save_textual_summary(self, results_df, dataset_df, train_size, test_size, output_dir, sentiment_dist, full_df, cm_data):
         summary_path = os.path.join(output_dir, "evaluation_summary.txt")

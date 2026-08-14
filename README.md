@@ -208,3 +208,31 @@ Model performance comparisons and visual results are exported to the `results/` 
 *   `comparison_plot.png`: Performance comparison bar chart.
 *   `nb_confusion_matrix.png`: Confusion matrix for the Naive Bayes model.
 *   `svm_confusion_matrix.png`: Confusion matrix for the SVM model.
+*   `evaluation_summary.txt`: Textual report answering the research objectives (sentiment tendency, per-model results, best algorithm).
+*   `ml_results.json`: Machine-readable training results (metrics, confusion matrices, top TF-IDF terms) consumed by the web app.
+
+---
+
+## 7. Web Application (PHP)
+
+A web interface in `webapp-php/` mirrors the pipeline flow: **Login → Scraping (import X cookies JSON) → Preprocessing & Labeling → NB vs SVM Results** (metrics table, comparison chart, confusion matrices, top TF-IDF terms, word clouds per sentiment, and auto-generated narrations).
+
+### Requirements
+*   PHP 7.4+ with `pdo_sqlite` (bundled by default). Install via [XAMPP](https://www.apachefriends.org/) (Windows) or `brew install php` (macOS).
+*   The Python venv must already exist (Section 2) — the web app triggers `main.py` phases through it.
+
+### Run
+```bash
+# Using PHP's built-in server (from the project root):
+php -S localhost:8000 -t webapp-php
+# then open http://localhost:8000 and log in with admin / admin
+```
+Or with XAMPP: place the project inside `htdocs` and open `http://localhost/ta-scrapper-x/webapp-php/`.
+
+### How it works
+*   `api.php?action=data` reads the SQLite database directly via PDO (stats, tweets, word clouds) and reads training results from `results/ml_results.json`.
+*   `api.php?action=run&phase=scrape|preprocess|label|train` runs the corresponding `main.py` phase through the venv Python via `shell_exec`.
+*   `api.php?action=upload-cookies` saves an uploaded browser-exported cookies JSON to `config/cookies.json`.
+*   `koneksi.php` holds the PDO database connection.
+
+*Note: if the process buttons fail under XAMPP, make sure `shell_exec` is not listed in `disable_functions` in `php.ini`.*

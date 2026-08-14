@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scraping Data - Analisis Sentimen MBG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z"/><path d="m16 10-4 4-2-2"/></svg>
+      </div>
+      <span>Sentimen MBG</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="scraping.html" class="active">Scraping</a>
+      <a href="preprocessing.html">Preprocessing &amp; Labeling</a>
+      <a href="hasil.html">Hasil Model</a>
+      <a href="#" onclick="logout()" class="btn btn-logout">Logout</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div class="header-icon-badge">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      </div>
+      <div>
+        <h1 class="page-title">Scraping Data Tweet dari X</h1>
+        <p class="page-sub">
+          Langkah 1: Impor cookies sesi X (JSON hasil export browser), kemudian jalankan scraper live untuk mengumpulkan tweet publik.
+        </p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          1. Impor Cookies Sesi X
+        </h2>
+        <p style="font-size:0.88rem;color:var(--ink-secondary);margin-bottom:14px">
+          Status Cookies: <strong id="cookieStatus">-</strong>
+        </p>
+        <div class="upload-dropzone">
+          <input type="file" id="cookieFile" accept=".json,application/json" class="form-control" style="width:100%;margin-bottom:12px">
+          <button class="btn btn-secondary" id="uploadBtn" style="width:100%">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Unggah cookies.json
+          </button>
+        </div>
+        <p class="note" id="uploadMsg"></p>
+      </div>
+
+      <div class="panel">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          2. Jalankan Scraping Live
+        </h2>
+        <p style="font-size:0.88rem;color:var(--ink-secondary);margin-bottom:12px">
+          Kata kunci target: <span id="keywords" style="font-weight:700;color:var(--ink)">-</span>
+        </p>
+        <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+          <label for="limitInput" style="font-size:0.88rem;color:var(--ink-secondary);font-weight:600">Jumlah tweet per kata kunci:</label>
+          <input type="number" id="limitInput" value="20" min="1" max="200" class="form-control" style="width:90px">
+        </div>
+        <button class="btn btn-dark" id="scrapeBtn" style="width:100%">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Mulai Scraping Live
+        </button>
+      </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div class="terminal-window" id="scrapeLogWindow" style="display:none">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <div class="terminal-title">Scraper Console Output</div>
+      </div>
+      <div class="terminal-body" id="scrapeLog"></div>
+    </div>
+
+    <!-- Keyword Summary Cards -->
+    <div class="cards" id="keywordCards"></div>
+
+    <!-- Raw Data Table -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Tweet Mentah Terbaru
+        </h2>
+        <span style="font-size:0.82rem;color:var(--ink-muted);font-weight:600">Hasil scraping langsung dari X</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Tweet Asli</th>
+              <th>Kata Kunci</th>
+              <th>Tanggal</th>
+              <th>URL Twitter</th>
+            </tr>
+          </thead>
+          <tbody id="rawRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="dashboard.html" class="btn btn-secondary">&larr; Kembali ke Dashboard</a>
+      <a href="preprocessing.html" class="btn btn-primary">Lanjut: Preprocessing &amp; Labeling &rarr;</a>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+
+    function renderPage(data) {
+      const p = data.pipeline;
+      const cookieEl = document.getElementById("cookieStatus");
+      cookieEl.textContent = p.cookies_exists ? "Tersedia ✔" : "BELUM Ada — Unggah File Sesi";
+      cookieEl.style.color = p.cookies_exists ? "var(--pos-text)" : "var(--neg-text)";
+      
+      document.getElementById("keywords").textContent = p.keywords.join(", ");
+
+      document.getElementById("keywordCards").innerHTML =
+        `<div class="card"><div class="value">${data.stats.total_tweets}</div><div class="label">Total Tweet di Database</div></div>` +
+        Object.entries(p.per_keyword).map(([k, v]) =>
+          `<div class="card"><div class="value">${v}</div><div class="label">Keyword: ${esc(k)}</div></div>`).join("");
+
+      document.getElementById("rawRows").innerHTML = data.raw_tweets.map((t) => {
+        const tweetUrl = t.tweet_url || (t.tweet_id ? `https://x.com/${t.username}/status/${t.tweet_id}` : `https://x.com/${t.username}`);
+        return `
+          <tr>
+            <td>
+              <a href="https://x.com/${esc(t.username)}" target="_blank" rel="noopener noreferrer" class="user-link">
+                @${esc(t.username)}
+              </a>
+            </td>
+            <td class="text-cell">${esc(t.raw_text)}</td>
+            <td><span class="keyword-badge">${esc(t.keyword)}</span></td>
+            <td class="date-cell">${esc(String(t.created_at).slice(0, 16))}</td>
+            <td>
+              <a href="${esc(tweetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-tweet-link" title="Buka tweet di X">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <span>Buka Tweet</span>
+              </a>
+            </td>
+          </tr>`;
+      }).join("")
+      || `<tr><td colspan="5" style="text-align:center;color:var(--ink-muted);padding:32px">Belum ada data. Jalankan scraping.</td></tr>`;
+    }
+
+    loadData().then(renderPage).catch(showLoadError);
+
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const file = document.getElementById("cookieFile").files[0];
+      const msg = document.getElementById("uploadMsg");
+      if (!file) { msg.textContent = "Pilih file JSON terlebih dahulu."; return; }
+      try {
+        const text = await file.text();
+        JSON.parse(text);
+        const res = await fetch("api.php?action=upload-cookies", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: text,
+        });
+        const out = await res.json();
+        msg.textContent = out.message;
+        if (out.ok) loadData().then(renderPage);
+      } catch (e) {
+        msg.textContent = "File bukan JSON valid: " + e.message;
+      }
+    });
+
+    document.getElementById("scrapeBtn").addEventListener("click", async (e) => {
+      const limit = parseInt(document.getElementById("limitInput").value) || 20;
+      const logWin = document.getElementById("scrapeLogWindow");
+      logWin.style.display = "block";
+      const ok = await runPhase("scrape", { limit }, e.target, document.getElementById("scrapeLog"));
+      if (ok) loadData().then(renderPage);
+    });
+  </script>
+</body>
+</html>

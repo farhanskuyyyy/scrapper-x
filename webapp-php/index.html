@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Analisis Sentimen MBG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+  <form class="login-card" id="loginForm">
+    <div class="login-icon-badge">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z"/><path d="m16 10-4 4-2-2"/></svg>
+    </div>
+    <h1>Analisis Sentimen MBG</h1>
+    <p class="sub">Klasifikasi Naive Bayes vs Support Vector Machine</p>
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Masukkan username" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Masukkan password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px">Masuk ke Dashboard</button>
+    <p class="error-msg" id="errorMsg">Username atau password salah.</p>
+  </form>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value;
+      if (u === "admin" && p === "admin") {
+        sessionStorage.setItem("loggedIn", "true");
+        window.location.href = "dashboard.html";
+      } else {
+        document.getElementById("errorMsg").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -23,7 +23,18 @@ ta-scrapper-x/
 │   ├── comparison_plot.png   # Grafik batang perbandingan Naive Bayes vs SVM
 │   ├── nb_confusion_matrix.png# Confusion Matrix untuk model Naive Bayes
 │   ├── svm_confusion_matrix.png# Confusion Matrix untuk model SVM
-│   └── evaluation_summary.txt# Laporan analisis performa tekstual otomatis
+│   ├── evaluation_summary.txt# Laporan analisis performa tekstual otomatis
+│   └── ml_results.json       # Hasil training format JSON (dibaca aplikasi web)
+├── webapp-php/
+│   ├── index.html            # Layar login (admin/admin)
+│   ├── dashboard.html        # Layar ringkasan distribusi sentimen + alur proses
+│   ├── scraping.html         # Layar impor cookies X & menjalankan scraping
+│   ├── preprocessing.html    # Layar preprocessing, pelabelan, word cloud
+│   ├── hasil.html            # Layar hasil & perbandingan NB vs SVM
+│   ├── api.php               # Backend: baca SQLite (PDO) & memicu fase Python
+│   ├── koneksi.php           # Koneksi PDO ke database SQLite
+│   ├── app.js                # Logika bersama: fetch data, chart SVG, narasi
+│   └── style.css             # Gaya tampilan seluruh layar
 ├── src/
 │   ├── database/
 │   │   └── db_manager.py     # Pengelola koneksi, migrasi, dan kueri SQLite
@@ -37,9 +48,13 @@ ta-scrapper-x/
 │   └── models/
 │       └── classifier_pipeline.py # TF-IDF, pembagian dataset, NB/SVM training & evaluasi
 ├── main.py                   # Controller utama (CLI Orchestrator)
+├── view_db.py                # Utilitas melihat isi database dari terminal
+├── debug_twikit.py           # Alat diagnosa error scraper twikit
 ├── setup_env.py              # Script otomatisasi instalasi virtualenv & patch library
-├── requirements.txt          # Daftar pustaka (dependencies) Python dasar
+├── requirements.txt          # Daftar pustaka (dependencies) Python
 ├── README.md                 # Panduan instalasi dan penggunaan program
+├── penjelasan_file.md        # Penjelasan proses & tanggung jawab per file
+├── bab4_checklist.md         # Checklist penyusunan BAB IV skripsi
 └── structure_guide.md        # Panduan penjelasan struktur folder (File ini)
 ```
 
@@ -79,7 +94,15 @@ Berisi seluruh logika pemrograman modular yang terbagi menjadi sub-modul:
 4.  **`src/models/`**:
     *   **`classifier_pipeline.py`**: Membagi data secara *stratified*, melakukan transformasi teks numerik TF-IDF (N-gram 1,2), melatih model Naive Bayes & Linear SVM, serta mengekspor hasil ke folder `results/`.
 
-### E. Berkas Utama di Direktori Root
+### E. Folder `webapp-php/` (Antarmuka Web)
+Aplikasi web berbasis PHP (kompatibel 7.4+) yang menyajikan seluruh alur pipeline secara visual:
+*   **Alur layar**: Login → Dashboard → Scraping (impor cookies JSON X, jalankan scraping) → Preprocessing & Labeling (tabel before/after, word cloud per sentimen) → Hasil Model (tabel metrik NB vs SVM, grafik perbandingan, confusion matrix, top TF-IDF, narasi otomatis).
+*   **`api.php`**: backend tunggal — membaca database SQLite langsung via PDO, menjalankan fase Python via `shell_exec`, dan menyimpan cookies yang diunggah.
+*   **`koneksi.php`**: koneksi PDO ke SQLite (dipisah agar mudah dijelaskan).
+*   Hasil training dibaca dari `results/ml_results.json` yang ditulis `classifier_pipeline.py`.
+*   Menjalankan: `php -S localhost:8000 -t webapp-php` dari root project, login `admin/admin`.
+
+### F. Berkas Utama di Direktori Root
 *   **`main.py`**: Pengendali utama seluruh jalannya program. Menerima instruksi parameter argumen CLI seperti `--mode scrape`, `--mode preprocess`, `--mode label`, `--mode train`, atau `--mode run-all` (dan flag pendukung `--live` / `--limit`).
 *   **`setup_env.py`**: Utilitas untuk membantu Anda memulai project di komputer lain secara instan dengan otomatisasi pembuatan lingkungan virtual dan *patching* library.
 *   **`requirements.txt`**: Daftar pustaka dasar Python yang wajib terinstall.

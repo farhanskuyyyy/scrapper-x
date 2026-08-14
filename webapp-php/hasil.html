@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hasil Model - Analisis Sentimen MBG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z"/><path d="m16 10-4 4-2-2"/></svg>
+      </div>
+      <span>Sentimen MBG</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="scraping.html">Scraping</a>
+      <a href="preprocessing.html">Preprocessing &amp; Labeling</a>
+      <a href="hasil.html" class="active">Hasil Model</a>
+      <a href="#" onclick="logout()" class="btn btn-logout">Logout</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div class="header-icon-badge">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <div>
+        <h1 class="page-title">Klasifikasi Naive Bayes &amp; SVM</h1>
+        <p class="page-sub">
+          Langkah 3: Latih model dengan TF-IDF (unigram + bigram) dan pembagian data 80:20 stratified, lalu bandingkan performa Multinomial Naive Bayes vs SVM (kernel linear).
+        </p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Pelatihan Model Machine Learning
+        </h2>
+        <button class="btn btn-primary" id="trainBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Latih Ulang Model NB &amp; SVM
+        </button>
+      </div>
+      <!-- Terminal Output -->
+      <div class="terminal-window" id="trainLogWindow" style="display:none;margin-top:14px;margin-bottom:0">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+          </div>
+          <div class="terminal-title">Model Trainer Console Output</div>
+        </div>
+        <div class="terminal-body" id="trainLog"></div>
+      </div>
+    </div>
+
+    <div class="cards" id="datasetCards"></div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Tabel Metrik Evaluasi Model
+        </h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Metrik Evaluasi</th>
+              <th class="num">Multinomial Naive Bayes</th>
+              <th class="num">SVM (Kernel Linear)</th>
+            </tr>
+          </thead>
+          <tbody id="metricRows"></tbody>
+        </table>
+      </div>
+      <div id="metricNarration"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Grafik Perbandingan Metrik Evaluasi
+        </h2>
+      </div>
+      <div class="legend" style="flex-direction:row;gap:24px;margin-bottom:14px" id="barLegend"></div>
+      <div id="groupedBar"></div>
+      <div id="barNarration"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Confusion Matrix &mdash; Naive Bayes</h2>
+        </div>
+        <div id="cmNb"></div>
+        <div id="cmNbNarration"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Confusion Matrix &mdash; SVM</h2>
+        </div>
+        <div id="cmSvm"></div>
+        <div id="cmSvmNarration"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top 10 Kata Paling Berpengaruh (Bobot TF-IDF)</h2>
+      </div>
+      <div id="topTerms"></div>
+      <div id="termsNarration"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Kesimpulan Sentimen Publik terhadap MBG (Prediksi Model)</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Model Klasifikasi</th>
+              <th class="num">Prediksi Positif</th>
+              <th class="num">Prediksi Negatif</th>
+              <th>Kesimpulan Sentimen Publik</th>
+            </tr>
+          </thead>
+          <tbody id="conclusionRows"></tbody>
+        </table>
+      </div>
+      <p class="note">Prediksi dilakukan pada seluruh dataset biner. Model dilatih tanpa kelas netral (mengikuti metodologi penelitian acuan) sehingga tidak memprediksi label netral.</p>
+    </div>
+
+    <div class="actions">
+      <a href="preprocessing.html" class="btn btn-secondary">&larr; Kembali ke Preprocessing</a>
+    </div>
+    <p class="footer-note" id="generatedAt"></p>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+
+    function renderPage(data) {
+      if (!data.ml) {
+        showLoadError(new Error("Dataset terlalu kecil, hasil model belum tersedia. Tambah data lalu jalankan ulang export_data.py."));
+        return;
+      }
+      const ml = data.ml;
+
+      document.getElementById("datasetCards").innerHTML = `
+        <div class="card"><div class="value">${ml.dataset_size}</div><div class="label">Dataset Biner (Pos + Neg)</div></div>
+        <div class="card"><div class="value">${ml.train_size}</div><div class="label">Data Latih (80%)</div></div>
+        <div class="card"><div class="value">${ml.test_size}</div><div class="label">Data Uji (20%)</div></div>`;
+
+      const names = ["Accuracy", "Precision", "Recall", "F1-Score", "AUC-ROC"];
+      const keys = ["accuracy", "precision", "recall", "f1", "auc"];
+      const nb = ml.models.nb.metrics, svm = ml.models.svm.metrics;
+
+      document.getElementById("metricRows").innerHTML = names.map((n, i) => {
+        const a = nb[keys[i]], b = svm[keys[i]];
+        const bold = (v, other) => (v > other ? `<strong style="color:var(--brand-blue)">${fmtPct(v)}</strong>` : fmtPct(v));
+        return `<tr><td>${n}</td><td class="num">${bold(a, b)}</td><td class="num">${bold(b, a)}</td></tr>`;
+      }).join("");
+
+      document.getElementById("barLegend").innerHTML = `
+        <div class="item"><span class="swatch" style="background:${COLORS.nb}"></span>Naive Bayes</div>
+        <div class="item"><span class="swatch" style="background:${COLORS.svm}"></span>SVM (Linear)</div>`;
+
+      groupedBarChart(document.getElementById("groupedBar"), names, [
+        { name: "Naive Bayes", color: COLORS.nb, values: keys.map((k) => nb[k]) },
+        { name: "SVM", color: COLORS.svm, values: keys.map((k) => svm[k]) },
+      ]);
+
+      confusionTable(document.getElementById("cmNb"), ml.models.nb.confusion);
+      confusionTable(document.getElementById("cmSvm"), ml.models.svm.confusion);
+
+      hBarChart(document.getElementById("topTerms"), ml.top_terms);
+
+      const nbWins = keys.filter((k) => nb[k] > svm[k]).length;
+      const svmWins = keys.filter((k) => svm[k] > nb[k]).length;
+      const winnerText = nbWins === svmWins
+        ? "kedua algoritma menunjukkan performa yang berimbang"
+        : (svmWins > nbWins
+          ? `algoritma SVM lebih unggul dengan memenangkan ${svmWins} dari ${keys.length} metrik evaluasi`
+          : `algoritma Naive Bayes lebih unggul dengan memenangkan ${nbWins} dari ${keys.length} metrik evaluasi`);
+
+      document.getElementById("metricNarration").innerHTML = narration(
+        `Tabel di atas menyajikan hasil evaluasi kedua algoritma pada ${ml.test_size} data uji. ` +
+        `Naive Bayes memperoleh accuracy ${fmtPct(nb.accuracy)}, precision ${fmtPct(nb.precision)}, ` +
+        `recall ${fmtPct(nb.recall)}, F1-score ${fmtPct(nb.f1)}, dan AUC-ROC ${fmtPct(nb.auc)}. ` +
+        `Sementara SVM memperoleh accuracy ${fmtPct(svm.accuracy)}, precision ${fmtPct(svm.precision)}, ` +
+        `recall ${fmtPct(svm.recall)}, F1-score ${fmtPct(svm.f1)}, dan AUC-ROC ${fmtPct(svm.auc)}. ` +
+        `Berdasarkan perbandingan tersebut, ${winnerText}.`);
+
+      document.getElementById("barNarration").innerHTML = narration(
+        `Gambar di atas memvisualisasikan perbandingan kelima metrik evaluasi dalam bentuk diagram ` +
+        `batang, dengan warna biru merepresentasikan Naive Bayes dan warna oranye merepresentasikan SVM. ` +
+        `Melalui visualisasi ini perbedaan performa kedua algoritma pada setiap metrik dapat diamati ` +
+        `secara langsung.`);
+
+      const cmText = (name, cm) => {
+        const benar = cm.tp + cm.tn;
+        const total = cm.tp + cm.tn + cm.fp + cm.fn;
+        return `Tabel di atas menunjukkan hasil klasifikasi ${name} pada data uji: ${cm.tp} tweet positif ` +
+          `berhasil diprediksi positif (true positive), ${cm.tn} tweet negatif berhasil diprediksi negatif ` +
+          `(true negative), ${cm.fp} tweet negatif salah diprediksi positif (false positive), dan ${cm.fn} ` +
+          `tweet positif salah diprediksi negatif (false negative). Total prediksi benar sebanyak ` +
+          `${benar} dari ${total} data uji (${(benar / total * 100).toFixed(1)}%).`;
+      };
+      document.getElementById("cmNbNarration").innerHTML = narration(cmText("Naive Bayes", ml.models.nb.confusion));
+      document.getElementById("cmSvmNarration").innerHTML = narration(cmText("SVM", ml.models.svm.confusion));
+
+      const t = ml.top_terms;
+      document.getElementById("termsNarration").innerHTML = narration(
+        `Gambar di atas menampilkan sepuluh kata dengan bobot TF-IDF rata-rata tertinggi pada data latih. ` +
+        `Kata "${esc(t[0].term)}" menempati posisi teratas dengan bobot ${t[0].weight}, diikuti ` +
+        `"${esc(t[1].term)}" (${t[1].weight}) dan "${esc(t[2].term)}" (${t[2].weight}). Kata-kata tersebut ` +
+        `merupakan fitur yang paling berpengaruh dalam proses klasifikasi sentimen oleh kedua model.`);
+
+      const rows = [["Naive Bayes", ml.models.nb], ["SVM (Linear)", ml.models.svm]].map(([name, m]) => {
+        const total = m.full_pred_positive + m.full_pred_negative;
+        const posP = (m.full_pred_positive / total * 100).toFixed(1);
+        const negP = (m.full_pred_negative / total * 100).toFixed(1);
+        const dom = m.full_pred_negative > m.full_pred_positive
+          ? `dominan NEGATIF (${negP}%)` : `dominan POSITIF (${posP}%)`;
+        return `<tr><td style="font-weight:700">${name}</td>
+          <td class="num">${m.full_pred_positive} (${posP}%)</td>
+          <td class="num">${m.full_pred_negative} (${negP}%)</td>
+          <td>Respon publik ${dom}</td></tr>`;
+      });
+      document.getElementById("conclusionRows").innerHTML = rows.join("");
+
+      document.getElementById("generatedAt").textContent =
+        "Data diekspor dari database: " + data.generated_at;
+    }
+
+    loadData().then(renderPage).catch(showLoadError);
+
+    document.getElementById("trainBtn").addEventListener("click", async (e) => {
+      document.getElementById("trainLogWindow").style.display = "block";
+      const ok = await runPhase("train", {}, e.target, document.getElementById("trainLog"));
+      if (ok) loadData().then(renderPage);
+    });
+  </script>
+</body>
+</html>

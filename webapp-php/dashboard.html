@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Analisis Sentimen MBG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z"/><path d="m16 10-4 4-2-2"/></svg>
+      </div>
+      <span>Sentimen MBG</span>
+    </div>
+    <nav>
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="scraping.html">Scraping</a>
+      <a href="preprocessing.html">Preprocessing &amp; Labeling</a>
+      <a href="hasil.html">Hasil Model</a>
+      <a href="#" onclick="logout()" class="btn btn-logout">Logout</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div class="header-icon-badge">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <div>
+        <h1 class="page-title">Selamat Datang, Admin</h1>
+        <p class="page-sub">Ringkasan hasil analisis sentimen Program Makan Bergizi Gratis (MBG) pada media sosial X.</p>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="value" id="totalTweets">-</div>
+        <div class="label">Total Tweet Berlabel</div>
+      </div>
+      <div class="card pos">
+        <div class="value" id="posCount">-</div>
+        <div class="label">Sentimen Positif</div>
+        <div class="pct" id="posPct"></div>
+      </div>
+      <div class="card neg">
+        <div class="value" id="negCount">-</div>
+        <div class="label">Sentimen Negatif</div>
+        <div class="pct" id="negPct"></div>
+      </div>
+      <div class="card neu">
+        <div class="value" id="neuCount">-</div>
+        <div class="label">Sentimen Netral</div>
+        <div class="pct" id="neuPct"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          Distribusi Sentimen (Pelabelan InSet Lexicon)
+        </h2>
+      </div>
+      <div class="chart-row">
+        <div id="donut"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <p class="note" id="conclusion"></p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Alur Proses Pipeline Analisis
+        </h2>
+      </div>
+      <div class="cards" style="margin-bottom:0">
+        <a class="card" href="scraping.html" style="text-decoration:none;color:inherit">
+          <div class="value" style="color:var(--brand-blue)">01</div>
+          <div class="label"><strong style="color:var(--ink)">Scraping Live</strong><br>Impor cookies sesi X, kumpulkan tweet berdasarkan kata kunci.</div>
+        </a>
+        <a class="card" href="preprocessing.html" style="text-decoration:none;color:inherit">
+          <div class="value" style="color:var(--brand-blue)">02</div>
+          <div class="label"><strong style="color:var(--ink)">Preprocessing &amp; Labeling</strong><br>Pembersihan teks (Sastrawi), pelabelan otomatis InSet Lexicon.</div>
+        </a>
+        <a class="card" href="hasil.html" style="text-decoration:none;color:inherit">
+          <div class="value" style="color:var(--brand-blue)">03</div>
+          <div class="label"><strong style="color:var(--ink)">Klasifikasi NB &amp; SVM</strong><br>Ekstraksi bobot TF-IDF, pelatihan model, dan evaluasi performa.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="scraping.html" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Mulai dari Scraping
+      </a>
+    </div>
+
+    <p class="footer-note" id="generatedAt"></p>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+    loadData().then((data) => {
+      const s = data.stats;
+      document.getElementById("totalTweets").textContent = s.total_labeled;
+      document.getElementById("posCount").textContent = s.positive;
+      document.getElementById("negCount").textContent = s.negative;
+      document.getElementById("neuCount").textContent = s.neutral;
+      document.getElementById("posPct").textContent = s.positive_pct + "%";
+      document.getElementById("negPct").textContent = s.negative_pct + "%";
+      document.getElementById("neuPct").textContent = s.neutral_pct + "%";
+
+      const items = [
+        { label: "Positif", value: s.positive, pct: s.positive_pct, color: COLORS.pos },
+        { label: "Negatif", value: s.negative, pct: s.negative_pct, color: COLORS.neg },
+        { label: "Netral", value: s.neutral, pct: s.neutral_pct, color: COLORS.neu },
+      ];
+      donutChart(document.getElementById("donut"), items);
+      renderLegend(document.getElementById("legend"), items);
+
+      const dominant = items.reduce((a, b) => (b.value > a.value ? b : a));
+      document.getElementById("conclusion").outerHTML = narration(
+        `Gambar di atas menunjukkan distribusi sentimen dari ${s.total_labeled} tweet yang telah ` +
+        `dilabeli secara otomatis menggunakan kamus InSet Lexicon: ${s.positive} tweet positif ` +
+        `(${s.positive_pct}%), ${s.negative} tweet negatif (${s.negative_pct}%), dan ${s.neutral} tweet ` +
+        `netral (${s.neutral_pct}%). Berdasarkan distribusi tersebut, kecenderungan sentimen publik ` +
+        `terhadap Program Makan Bergizi Gratis adalah dominan ${dominant.label.toUpperCase()} ` +
+        `dengan persentase ${dominant.pct}%.`);
+      document.getElementById("generatedAt").textContent =
+        "Data diekspor dari database: " + data.generated_at;
+    }).catch(showLoadError);
+  </script>
+</body>
+</html>

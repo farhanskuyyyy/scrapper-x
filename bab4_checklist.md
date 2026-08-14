@@ -28,27 +28,31 @@ Pemetaan: struktur BAB IV contoh (sistem pakar rakit komputer) → apa yang perl
 
 | Diagram | Isi untuk project MBG |
 |---|---|
-| Use Case Diagram | Aktor tunggal: **Peneliti**. Use case: Scraping Tweet (include: Autentikasi X), Preprocessing Teks, Pelabelan Otomatis, Training & Evaluasi Model, Melihat Isi Database, Melihat Laporan Hasil |
-| Use Case Description | Satu tabel per use case (6 tabel), format sama seperti template (scenario, triggering event, actors, precondition, flow of activity) — trigger-nya perintah CLI, bukan tombol |
+| Use Case Diagram | Aktor: **Pengguna/Peneliti**. Use case (berbasis aplikasi web `webapp-php/`): Login, Impor Cookies X, Scraping Tweet, Preprocessing Teks, Pelabelan Otomatis, Latih Model NB & SVM, Melihat Hasil Evaluasi |
+| Use Case Description | Satu tabel per use case (7 tabel), format sama seperti template (scenario, triggering event, actors, precondition, flow of activity) — trigger tombol di aplikasi web |
 | Class Diagram | **Bisa dibuat akurat dari kode nyata**: `DBManager`, `BaseScraper` (abstract) ← `MockScraper`/`TwikitScraper`, `TextCleaner`, `LexiconLabeler`, `ClassifierPipeline` + atribut & method masing-masing (lihat `penjelasan_file.md`) |
 | Activity Diagram | 4 diagram, satu per fase: scrape (dengan decision cookies valid/tidak, retry bot-check), preprocess, label, train |
 | Sequence Diagram | 4 diagram: `main.py` → scraper → X.com → `DBManager`; main → `TextCleaner` → DB; main → `LexiconLabeler` → DB; main → `ClassifierPipeline` → results/ |
 | Object Diagram | Contoh instance: satu objek tweet nyata dengan nilai atribut (raw_text, cleaned_text, score, label) |
 | Deployment Diagram | Sederhana: Laptop peneliti (Python venv + SQLite + hasil) ↔ HTTPS ↔ Server X.com; + GitHub (unduh InSet Lexicon) |
 
-### 2. Rancangan Layar → **Rancangan Keluaran (adaptasi)**
-Project ini CLI, tidak punya GUI. Ganti dengan:
-- ⚠️ Rancangan keluaran terminal per mode (format output scraping/preprocess/label/train)
-- ⚠️ Rancangan struktur laporan `evaluation_summary.txt` (6 section)
-- ⚠️ Rancangan grafik (comparison plot, confusion matrix)
+### 2. Rancangan Layar (wireframe)
+Aplikasi web sudah ada di `webapp-php/` — rancangan layar tinggal digambar versi sketsa/wireframe dari 5 layar yang sudah jadi (pakai draw.io/Figma/Balsamiq, gaya kotak-kotak seperti contoh):
+- ⚠️ Rancangan Layar Login
+- ⚠️ Rancangan Layar Dashboard (kartu statistik + donut chart)
+- ⚠️ Rancangan Layar Scraping (form impor cookies + tombol proses + tabel)
+- ⚠️ Rancangan Layar Preprocessing & Labeling (tabel before/after + word cloud)
+- ⚠️ Rancangan Layar Hasil NB vs SVM (tabel metrik + grafik + confusion matrix)
 
-> Alternatif kalau dosen mewajibkan "layar": bisa ditambah dashboard web sederhana (misal Streamlit) untuk menampilkan hasil — perlu pengembangan baru.
+### 3. Tampilan Layar (screenshot aplikasi web)
+Jalankan `php -S localhost:8000 -t webapp-php`, isi data sampai cukup, lalu screenshot:
+- ✅ Layar Login → Dashboard → Scraping → Preprocessing & Labeling → Hasil Model (5 gambar, aplikasi sudah jadi)
+- ✅ Word cloud positif/negatif/netral + narasi otomatis (sudah tampil di halaman)
+- Pendukung dari `results/`: `comparison_plot.png`, confusion matrix PNG, `evaluation_summary.txt`
+- Opsional: screenshot terminal `view_db.py` sebagai bukti data (kolom `tweet_url` bisa diklik ke tweet asli)
 
-### 3. Tampilan Layar → **Tampilan Keluaran Program (screenshot)**
-- ⚠️ Screenshot terminal: `--mode scrape` (berhasil ambil tweet), `--mode preprocess`, `--mode label`, `--mode train` (tabel perbandingan)
-- ⚠️ Screenshot `view_db.py` (distribusi sentimen + pratinjau data + bukti tweet_url)
-- ✅ Gambar hasil: `comparison_plot.png`, `nb_confusion_matrix.png`, `svm_confusion_matrix.png`
-- ✅ Isi `evaluation_summary.txt`
+> Deskripsi tiap use case web untuk tabel Use Case Scenario: Login, Impor Cookies, Scraping,
+> Preprocessing, Pelabelan, Latih Model, Lihat Hasil Evaluasi — cocokkan dengan format Tabel 4.2-4.7 contoh.
 
 ## D. (Tambahan khas penelitian ML — tidak ada di template sistem pakar)
 - ⚠️ Tabel hasil evaluasi lengkap (Accuracy, Precision, Recall, F1, AUC-ROC) + pembahasan per metrik — data dari `comparison_results.csv`

@@ -92,3 +92,32 @@ Catatan: kalau Precision/Recall/F1 = 0, artinya data terlalu sedikit/timpang seh
 | `results/` | Semua output evaluasi: CSV, grafik, confusion matrix, laporan teks |
 | `requirements.txt` | Daftar library Python (Sastrawi, scikit-learn, twikit, dll.) |
 | `debug_twikit.py` | Alat diagnosa kalau scraper error (cek versi, koneksi, langkah gagal) |
+| `results/ml_results.json` | Hasil training format JSON (metrik, confusion matrix, top TF-IDF) — ditulis `classifier_pipeline.py`, dibaca aplikasi web |
+
+---
+
+## Folder `webapp-php/` (Antarmuka Web)
+
+Aplikasi web PHP (kompatibel 7.4+) yang membungkus seluruh pipeline jadi tampilan layar. Alurnya mengikuti proses asli: **Login → Dashboard → Scraping → Preprocessing & Labeling → Hasil Model**.
+
+### `api.php` — Backend (Jembatan Web ↔ Database ↔ Python)
+Satu file dengan 3 perintah (dipilih lewat `?action=` di URL):
+1. **`?action=data`** — query database SQLite langsung via PDO: distribusi sentimen, daftar tweet, antrian proses, frekuensi kata untuk word cloud. Hasil training dibaca dari `results/ml_results.json`.
+2. **`?action=run&phase=scrape|preprocess|label|train`** — menjalankan `main.py --mode <fase>` lewat python venv menggunakan `shell_exec`, output prosesnya dikirim balik untuk ditampilkan sebagai log di layar.
+3. **`?action=upload-cookies`** — menyimpan file cookies JSON (export browser) ke `config/cookies.json`.
+
+### `koneksi.php` — Koneksi Database
+File kecil khusus membuat koneksi PDO ke SQLite (dengan timeout 10 detik untuk antisipasi database sedang dipakai proses Python).
+
+### Halaman
+| File | Layar |
+|---|---|
+| `index.html` | Login (admin/admin, demonstratif — bukan keamanan produksi) |
+| `dashboard.html` | Ringkasan: kartu jumlah per sentimen, donut chart, kartu alur 3 langkah |
+| `scraping.html` | Impor cookies X, jalankan scraping, tabel tweet mentah per keyword |
+| `preprocessing.html` | Tombol preprocessing & pelabelan, tabel before/after, word cloud positif/negatif/netral |
+| `hasil.html` | Latih ulang model, tabel metrik NB vs SVM, grafik perbandingan, 2 confusion matrix, top 10 TF-IDF, kesimpulan sentimen |
+
+`app.js` berisi logika bersama (ambil data dari api.php, gambar chart SVG tanpa library, narasi otomatis di bawah tiap gambar/tabel); `style.css` gaya tampilan.
+
+Menjalankan: `php -S localhost:8000 -t webapp-php` dari root project → http://localhost:8000.
