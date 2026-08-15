@@ -1,0 +1,42 @@
+# ============================================================
+# docker-compose for the MBG sentiment scraper + PHP dashboard.
+#
+#   docker compose up -d --build      # build + run
+#   docker compose logs -f            # watch logs
+#   open http://localhost:8000/index.html
+#
+# Secrets (cookies / credentials) are NEVER baked into the image.
+# They live in ./config on the host and are bind-mounted at runtime.
+# ============================================================
+services:
+  app:
+    build: .
+    container_name: mbg-scraper
+    restart: unless-stopped
+
+    ports:
+      # host:container — change left side if 8000 is taken.
+      - "8000:8000"
+
+    volumes:
+      # Persistent SQLite DB + results across container rebuilds.
+      - ./data:/app/data
+      - ./results:/app/results
+      # Runtime secrets: cookies.json / credentials.json injected here,
+      # not copied into the image. settings.json also editable live.
+      - ./config:/app/config
+
+    environment:
+      - DB_PATH=data/database.sqlite
+
+    # X/Twitter flags datacenter IPs. If scrape fails, route through
+    # a residential proxy by uncommenting and setting these:
+    # - HTTP_PROXY=http://user:pass@proxyhost:port
+    # - HTTPS_PROXY=http://user:pass@proxyhost:port
+
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost:8000/index.html')===false?1:0);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

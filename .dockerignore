@@ -1,0 +1,38 @@
+# --- Never bake into the image ---
+
+# Secrets: cookies + credentials injected at runtime via volume mount.
+config/cookies.json
+config/cookies-*.json
+config/credentials.json
+config/credentials*.json
+
+# Host virtualenv — rebuilt fresh inside the image.
+venv/
+.venv/
+env/
+ENV/
+
+# Local DB + results — mounted as volumes, not copied.
+data/database.sqlite
+data/database.backup.sqlite
+results/
+
+# Python cruft
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Docs / thesis PDFs — huge, irrelevant to runtime.
+*.pdf
+*.md
+
+# Git + editor
+.git/
+.gitignore
+.DS_Store
+**/.DS_Store
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
