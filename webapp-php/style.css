@@ -141,6 +141,22 @@ a {
   border-color: var(--neg-border);
 }
 
+/* Hamburger button — hidden on desktop, shown on mobile via media query */
+.nav-burger {
+  display: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--ink);
+  align-items: center;
+  justify-content: center;
+}
+.nav-burger:hover { background: var(--surface-alt); }
+
+/* Charts never overflow their container on small screens */
+#donut svg, #groupedBar svg, #topTerms svg,
+#wcPos svg, #wcNeg svg, #wcNeu svg { max-width: 100%; height: auto; }
+
 /* ---------- Page Layout ---------- */
 .container {
   max-width: 1140px;
@@ -294,8 +310,48 @@ a {
 
 @media (max-width: 820px) {
   .two-col { grid-template-columns: 1fr; }
-  .topbar { padding: 12px 16px; }
+  .topbar { padding: 12px 16px; flex-wrap: wrap; }
   .container { padding: 20px 16px 48px; }
+
+  /* --- Mobile navbar: burger toggles a stacked dropdown --- */
+  .nav-burger { display: inline-flex; }
+  .topbar nav {
+    display: none;
+    order: 3;                 /* full-width row below brand + burger */
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin-top: 10px;
+  }
+  /* CSS-only toggle: checkbox sits before <nav> as a sibling */
+  .nav-toggle:checked ~ nav { display: flex; }
+  .topbar nav a { padding: 12px 14px; }
+  .topbar nav .btn-logout { margin-left: 0; margin-top: 6px; }
+}
+
+/* hasil.html dataset cards: 3 equal columns that shrink to fit the
+   screen (minmax(0,1fr) allows shrinking below content width) so the
+   row never overflows horizontally. Stacks to 1 column on phones. */
+@media (min-width: 601px) {
+  #datasetCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  /* Panel header: title + action button stack vertically */
+  .panel-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .panel-header > .btn,
+  .panel-header > a.btn { width: 100%; }
+  .panel-header > div { width: 100%; }   /* filter/select wrappers */
+
+  /* Page header stacks; smaller title */
+  .page-header { flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .page-title { font-size: 1.25rem; }
+
+  /* Tighter panels + single-column cards */
+  .panel { padding: 18px 16px; }
+  .cards { grid-template-columns: 1fr; }
+  .chart-row { gap: 16px; }
 }
 
 /* ---------- Buttons & Inputs ---------- */
