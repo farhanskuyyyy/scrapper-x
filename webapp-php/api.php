@@ -308,5 +308,125 @@ if ($action == 'upload-cookies') {
 }
 
 
+// ============================================================
+// PERINTAH 4: ?action=file&name=...
+// Menyajikan file gambar hasil training dari folder results/
+// (folder ini di luar docroot webapp-php, jadi tidak bisa
+//  diakses langsung lewat URL — harus lewat jembatan ini).
+// Hanya file dalam daftar putih yang boleh dibuka (anti path traversal).
+// ============================================================
+if ($action == 'file') {
+
+    $file_yang_diizinkan = array(
+        'comparison_plot.png',
+        'nb_confusion_matrix.png',
+        'svm_confusion_matrix.png',
+    );
+
+    // basename() membuang path apa pun (mis. ../../etc/passwd -> passwd)
+    $nama = isset($_GET['name']) ? basename($_GET['name']) : '';
+
+    if (!in_array($nama, $file_yang_diizinkan, true)) {
+        kirim_jawaban(404, array('ok' => false, 'message' => 'File tidak diizinkan.'));
+    }
+
+    $lokasi = $folder_project . '/results/' . $nama;
+    if (!file_exists($lokasi)) {
+        kirim_jawaban(404, array('ok' => false, 'message' => 'File belum ada. Latih model dulu.'));
+    }
+
+    // Ganti header JSON (di atas) menjadi image/png
+    header('Content-Type: image/png');
+    header('Content-Length: ' . filesize($lokasi));
+    readfile($lokasi);
+    exit;
+}
+
+
+// ============================================================
+// PERINTAH 5: ?action=export&type=metrics|tweets|wordcloud
+// Mengunduh data sebagai file CSV (data LENGKAP dari database,
+// bukan hanya 50 baris seperti action=data).
+// ============================================================
+if ($action == 'export') {
+
+    require 'koneksi.php';
+    $type = isset($_GET['type']) ? $_GET['type'] : '';
+
+    // --- Validasi + tentukan nama file SEBELUM mengirim output ---
+    if ($type == 'metrics') {
+        $lokasi_hasil = $folder_project . '/results/ml_results.json';
+        if (!file_exists($lokasi_hasil)) {
+            kirim_jawaban(404, array('ok' => false, 'message' => 'Hasil training belum ada. Latih model dulu.'));
+        }
+        $ml = json_decode(file_get_contents($lokasi_hasil), true);
+        $nama_file = 'metrik_model.csv';
+    } elseif ($type == 'tweets') {
+        $nama_file = 'tweet_berlabel.csv';
+    } elseif ($type == 'wordcloud') {
+        $nama_file = 'wordcloud.csv';
+    } else {
+        kirim_jawaban(404, array('ok' => false, 'message' => 'Tipe export tidak dikenal.'));
+    }
+
+    // --- Kirim header CSV (mengganti header JSON di atas) ---
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $nama_file . '"');
+
+    $keluaran = fopen('php://output', 'w');
+    // BOM UTF-8 supaya karakter Indonesia tampil benar di Excel
+    fwrite($keluaran, "\xEF\xBB\xBF");
+
+    if ($type == 'metrics') {
+        fputcsv($keluaran, array('Model', 'Accuracy', 'Precision', 'Recall', 'F1-Score', 'AUC-ROC', 'TP', 'TN', 'FP', 'FN'));
+        $daftar = array('nb' => 'Naive Bayes', 'svm' => 'SVM (Linear)');
+        foreach ($daftar as $kunci => $nama_model) {
+            $m = $ml['models'][$kunci]['metrics'];
+            $c = $ml['models'][$kunci]['confusion'];
+            fputcsv($keluaran, array(
+                $nama_model, $m['accuracy'], $m['precision'], $m['recall'], $m['f1'], $m['auc'],
+                $c['tp'], $c['tn'], $c['fp'], $c['fn'],
+            ));
+        }
+    } elseif ($type == 'tweets') {
+        fputcsv($keluaran, array('Username', 'Tanggal', 'Keyword', 'Label', 'Skor', 'Tweet Asli', 'Hasil Preprocessing', 'URL'));
+        $baris = $koneksi->query(
+            "SELECT username, created_at, keyword, label, sentiment_score, raw_text, cleaned_text, tweet_url
+             FROM tweets WHERE label IS NOT NULL ORDER BY scraped_at DESC"
+        );
+        foreach ($baris as $r) {
+            fputcsv($keluaran, array(
+                $r['username'], $r['created_at'], $r['keyword'], $r['label'],
+                $r['sentiment_score'], $r['raw_text'], $r['cleaned_text'], $r['tweet_url'],
+            ));
+        }
+    } elseif ($type == 'wordcloud') {
+        fputcsv($keluaran, array('Label', 'Kata', 'Frekuensi'));
+        foreach (array('positive', 'negative', 'neutral') as $label) {
+            $q = $koneksi->prepare("SELECT cleaned_text FROM tweets WHERE label = ? AND cleaned_text IS NOT NULL");
+            $q->execute(array($label));
+            $frekuensi = array();
+            foreach ($q->fetchAll(PDO::FETCH_COLUMN) as $teks) {
+                foreach (preg_split('/\s+/', trim($teks)) as $kata) {
+                    if (mb_strlen($kata) >= 3) {
+                        $frekuensi[$kata] = isset($frekuensi[$kata]) ? $frekuensi[$kata] + 1 : 1;
+                    }
+                }
+            }
+            arsort($frekuensi);
+            $nomor = 0;
+            foreach ($frekuensi as $kata => $jml) {
+                if ($nomor >= 50) break;
+                fputcsv($keluaran, array($label, $kata, $jml));
+                $nomor++;
+            }
+        }
+    }
+
+    fclose($keluaran);
+    exit;
+}
+
+
 // Jika action tidak dikenal
 kirim_jawaban(404, array('ok' => false, 'message' => 'Endpoint tidak ditemukan.'));
